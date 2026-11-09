@@ -1,0 +1,13 @@
+{
+  "name": "lenormand-readings",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bilingual (English/Hebrew) Lenormand card readings website with spreads, card meanings and combined summaries.",
+  "scripts": {
+    "build": "node src/build.mjs",
+    "serve": "node src/serve.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "node --test"
+  }
+}
