@@ -153,6 +153,7 @@ async function main() {
   let linkCount = 0;
   let githubPageCount = 0;
   let repoPageCount = 0;
+  let livePageCount = 0;
   let qrPageCount = 0;
   for (const file of htmlFiles) {
     const html = await readFile(file, "utf8");
@@ -174,6 +175,7 @@ async function main() {
       assert(/<link rel="canonical" href="https?:\/\//.test(html), `${relativeFile}: canonical URL is absolute`);
       if (html.includes(`href="${site.github}"`)) githubPageCount += 1;
       if (html.includes(`href="${site.repository}"`)) repoPageCount += 1;
+      if (html.includes(`href="${site.live}"`)) livePageCount += 1;
       if (html.includes("github-qr.svg")) qrPageCount += 1;
     }
 
@@ -195,7 +197,8 @@ async function main() {
   const contentPageCount = htmlFiles.filter((file) => path.relative(dist, file) !== "index.html").length;
   assert(githubPageCount === contentPageCount, `GitHub link appears on every page (${githubPageCount}/${contentPageCount})`);
   assert(repoPageCount === contentPageCount, `Repository link appears on every page (${repoPageCount}/${contentPageCount})`);
-  assert(qrPageCount === contentPageCount, `GitHub QR appears on every page (${qrPageCount}/${contentPageCount})`);
+  assert(livePageCount === contentPageCount, `Live-site link appears on every page (${livePageCount}/${contentPageCount})`);
+  assert(qrPageCount === contentPageCount, `Live-site QR appears on every page (${qrPageCount}/${contentPageCount})`);
 
   const localeCodes = locales.map((locale) => locale.code).join("|");
   const articleHref = new RegExp(`href="/?(?:.*?)/(?:${localeCodes})/(?:spreads|cards)/`);

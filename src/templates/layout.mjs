@@ -144,7 +144,7 @@ ${body}
         </div>
         <p class="footer-connect-hint">${esc(ui.footer.githubHint)}</p>
       </div>
-      <a class="footer-qr" href="${esc(site.github)}" target="_blank" rel="noopener noreferrer">
+      <a class="footer-qr" href="${esc(site.live)}" target="_blank" rel="noopener noreferrer">
         <img src="${base}/assets/github-qr.svg" width="104" height="104" alt="${esc(ui.footer.githubQrAlt)}">
       </a>
     </div>

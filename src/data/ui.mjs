@@ -38,8 +38,8 @@ export const ui = {
       copyright: "© {year} Lenormand Veil. All rights reserved.",
       madeFor: "A quiet place to read the cards.",
       githubLabel: "Connect on GitHub",
-      githubHint: "Scan the code to open my GitHub profile.",
-      githubQrAlt: "QR code for the GitHub profile @nanapaknanapak-huemirit",
+      githubHint: "Scan the code to open the live site.",
+      githubQrAlt: "QR code for the Lenormand Veil live site",
       githubLinkAria: "Open the GitHub profile of @nanapaknanapak-huemirit in a new tab",
       githubRepo: "Source code",
       githubRepoAria: "Open the Lenormand Veil source code on GitHub in a new tab"
@@ -245,8 +245,8 @@ export const ui = {
       copyright: "© {year} הצעיף של לנורמנד. כל הזכויות שמורות.",
       madeFor: "מקום שקט לקרוא בו את הקלפים.",
       githubLabel: "התחברו ב־GitHub",
-      githubHint: "סרקו את הקוד כדי לפתוח את פרופיל ה־GitHub שלי.",
-      githubQrAlt: "קוד QR לפרופיל GitHub @nanapaknanapak-huemirit",
+      githubHint: "סרקו את הקוד כדי לפתוח את האתר המקוון.",
+      githubQrAlt: "קוד QR לאתר המקוון של הצעיף של לנורמנד",
       githubLinkAria: "פתחו את פרופיל GitHub של @nanapaknanapak-huemirit בכרטיסייה חדשה",
       githubRepo: "קוד המקור",
       githubRepoAria: "פתחו את קוד המקור של הצעיף של לנורמנד ב־GitHub בכרטיסייה חדשה"

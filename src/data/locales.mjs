@@ -26,7 +26,8 @@ export const site = {
   url: process.env.SITE_URL || "https://lenormand.example",
   base: process.env.BASE || "",
   github: "https://github.com/nanapaknanapak-huemirit",
-  repository: "https://github.com/nanapaknanapak-huemirit/lenormand-veil"
+  repository: "https://github.com/nanapaknanapak-huemirit/lenormand-veil",
+  live: "https://nanapaknanapak-huemirit.github.io/lenormand-veil/"
 };
 
 export function localeByCode(code) {

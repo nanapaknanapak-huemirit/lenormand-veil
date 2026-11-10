@@ -5,6 +5,8 @@ A bilingual (English / Hebrew) Lenormand readings website. It includes the full
 every draw. The site is fully static: the build writes plain HTML, CSS, JS and
 JSON with no runtime dependencies.
 
+**Live site:** https://nanapaknanapak-huemirit.github.io/lenormand-veil/
+
 ## Features
 
 - All 36 Lenormand cards with English and Hebrew meanings: keywords, core
@@ -81,8 +83,8 @@ left-to-right locale beyond its direction and font class.
 
 - The readings are for reflection and entertainment only and are not a
   substitute for medical, legal or financial advice.
-- The footer links to the author's GitHub profile and shows a static QR code
-  stored at `assets/github-qr.svg`. Regenerate that file if the profile URL
-  changes.
+- The footer links to the author's GitHub profile and source repository, and
+  shows a static QR code for the live site stored at `assets/github-qr.svg`.
+  Regenerate that file if the live-site URL changes.
 - The `?demo=1` query parameter draws and reveals a spread automatically. It is
   used for visual screenshots and development previews.
