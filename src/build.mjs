@@ -457,6 +457,14 @@ function spreadBody(spread, locale, uiLocale) {
         </div>
       </div>
       ${significator}
+      <div class="deck-stage" data-deck hidden>
+        <div class="deck-stage-head">
+          <p class="deck-status" data-deck-status role="status" aria-live="polite"></p>
+          <p class="deck-skip-hint" data-deck-skip-hint hidden>${esc(uiLocale.spreads.deckSkip)}</p>
+        </div>
+        <div class="deck-fan" data-deck-fan role="group" aria-label="${esc(uiLocale.spreads.deckAria)}"></div>
+      </div>
+      <p class="deck-caption" data-deck-caption aria-live="polite"></p>
       <div class="board-scroll">
         <div class="board" data-board data-layout="${esc(spread.layout)}" data-count="${spread.count}">${boardMarkup(
           spread,

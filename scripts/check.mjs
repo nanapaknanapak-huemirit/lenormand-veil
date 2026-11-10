@@ -155,6 +155,7 @@ async function main() {
   let repoPageCount = 0;
   let livePageCount = 0;
   let qrPageCount = 0;
+  let deckPageCount = 0;
   for (const file of htmlFiles) {
     const html = await readFile(file, "utf8");
     const relativeFile = path.relative(dist, file);
@@ -177,6 +178,7 @@ async function main() {
       if (html.includes(`href="${site.repository}"`)) repoPageCount += 1;
       if (html.includes(`href="${site.live}"`)) livePageCount += 1;
       if (html.includes("github-qr.svg")) qrPageCount += 1;
+      if (html.includes("data-deck-fan") && html.includes("data-deck-status")) deckPageCount += 1;
     }
 
     const hrefs = [...html.matchAll(/\b(href|src)="([^"]+)"/g)].map((match) => match[2]);
@@ -199,6 +201,8 @@ async function main() {
   assert(repoPageCount === contentPageCount, `Repository link appears on every page (${repoPageCount}/${contentPageCount})`);
   assert(livePageCount === contentPageCount, `Live-site link appears on every page (${livePageCount}/${contentPageCount})`);
   assert(qrPageCount === contentPageCount, `Live-site QR appears on every page (${qrPageCount}/${contentPageCount})`);
+  const spreadPageCount = locales.length * spreads.length;
+  assert(deckPageCount === spreadPageCount, `Deck picker appears on every spread page (${deckPageCount}/${spreadPageCount})`);
 
   const localeCodes = locales.map((locale) => locale.code).join("|");
   const articleHref = new RegExp(`href="/?(?:.*?)/(?:${localeCodes})/(?:spreads|cards)/`);

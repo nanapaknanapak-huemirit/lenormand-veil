@@ -76,6 +76,12 @@ function cardHref(data, card) {
   return `${data.pageBase}cards/${card.slug}/`;
 }
 
+function prefersReducedMotion() {
+  return Boolean(
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 function initDaily(data) {
   const root = document.querySelector("[data-daily]");
   if (!root) return;
@@ -122,15 +128,31 @@ function initReading(data) {
   const summaryQuestion = root.querySelector("[data-summary-question]");
   const hint = root.querySelector("[data-board-hint]");
   const significatorRoot = root.querySelector("[data-significator]");
+  const deckStage = root.querySelector("[data-deck]");
+  const deckFan = root.querySelector("[data-deck-fan]");
+  const deckStatus = root.querySelector("[data-deck-status]");
+  const deckSkipHint = root.querySelector("[data-deck-skip-hint]");
+  const deckCaption = root.querySelector("[data-deck-caption]");
   const isGrand = Boolean(spread.houses);
+  const isLarge = spread.count > 10;
+
+  if (!board || !drawButton || !revealButton || !resetButton || !deckStage || !deckFan) return;
+  if (!deckStatus || !deckCaption) return;
 
   const state = {
     cards: [],
+    deck: [],
     revealed: 0,
     revealedSet: new Set(),
-    timers: [],
-    significator: "woman",
-    drawing: false
+    nextIndex: 0,
+    deckStarted: false,
+    locked: false,
+    skipDwell: null,
+    skipRequested: false,
+    animations: [],
+    flying: null,
+    runId: 0,
+    significator: "woman"
   };
 
   const slots = [];
@@ -150,6 +172,11 @@ function initReading(data) {
     };
   }
 
+  function positionText(index) {
+    const label = positionLabel(index);
+    return label.name || label.number;
+  }
+
   function createBoard() {
     board.innerHTML = "";
     slots.length = 0;
@@ -167,18 +194,82 @@ function initReading(data) {
     }
   }
 
-  function clearTimers() {
-    state.timers.forEach((timer) => window.clearTimeout(timer));
-    state.timers = [];
+  function setStatus(text) {
+    deckStatus.textContent = text;
+  }
+
+  function updateStatus() {
+    if (!state.deckStarted) return;
+    if (state.nextIndex >= spread.count) {
+      setStatus(data.ui.spreads.deckAllChosen);
+      return;
+    }
+    const position = positionText(state.nextIndex);
+    const remaining = spread.count - state.nextIndex;
+    setStatus(
+      remaining === spread.count
+        ? data.ui.spreads.deckReady.replace("{position}", position)
+        : data.ui.spreads.deckLeft
+            .replace("{n}", String(remaining))
+            .replace("{position}", position)
+    );
+  }
+
+  function hideCaption() {
+    deckCaption.classList.remove("is-visible");
+    if (deckSkipHint) deckSkipHint.hidden = true;
+  }
+
+  function showCaption(index, stage) {
+    const label = positionLabel(index);
+    deckCaption.textContent = data.ui.spreads.deckCaption
+      .replace("{number}", label.number)
+      .replace("{name}", label.name || label.number);
+    deckCaption.style.top = `${Math.min(
+      stage.top + stage.height + 20,
+      window.innerHeight - 84
+    )}px`;
+    deckCaption.classList.add("is-visible");
+    if (deckSkipHint) deckSkipHint.hidden = false;
+  }
+
+  function clearAnimations() {
+    state.skipRequested = false;
+    if (state.skipDwell) {
+      const finishDwell = state.skipDwell;
+      state.skipDwell = null;
+      finishDwell();
+    }
+    state.animations.forEach((animation) => {
+      try {
+        animation.cancel();
+      } catch (error) {
+        // Animation may already have completed.
+      }
+    });
+    state.animations = [];
+    if (state.flying) {
+      state.flying.remove();
+      state.flying = null;
+    }
+    state.locked = false;
+    deckStage.classList.remove("is-locked");
   }
 
   function reset() {
-    clearTimers();
-    state.cards = [];
+    state.runId += 1;
+    clearAnimations();
+    state.cards = Array(spread.count).fill(null);
+    state.deck = [];
     state.revealed = 0;
     state.revealedSet = new Set();
-    state.drawing = false;
+    state.nextIndex = 0;
+    state.deckStarted = false;
+    state.skipRequested = false;
     createBoard();
+    deckFan.innerHTML = "";
+    deckStage.hidden = true;
+    hideCaption();
     summary.hidden = true;
     summaryBody.innerHTML = "";
     summaryQuestion.hidden = true;
@@ -186,10 +277,156 @@ function initReading(data) {
     drawButton.disabled = false;
     drawButton.hidden = false;
     revealButton.hidden = true;
+    revealButton.disabled = false;
     resetButton.hidden = true;
     if (hint) hint.textContent = data.ui.spreads.drawLede;
     if (significatorRoot) significatorRoot.hidden = false;
     root.classList.remove("is-complete");
+  }
+
+  function renderDeck() {
+    deckFan.innerHTML = "";
+    const total = state.deck.length;
+    if (!total) return;
+
+    const spreadWidth = 58;
+    const start = 50 - spreadWidth / 2;
+    const step = total > 1 ? spreadWidth / (total - 1) : 0;
+    const rotationStep = total > 1 ? Math.min(2.5, 40 / total) : 0;
+
+    state.deck.forEach((card, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "deck-pick";
+      button.style.setProperty("--deck-left", `${start + step * index}%`);
+      button.style.setProperty(
+        "--deck-rot",
+        `${(index - (total - 1) / 2) * rotationStep}deg`
+      );
+      button.style.setProperty("--deck-z", String(index + 1));
+      button.setAttribute(
+        "aria-label",
+        data.ui.spreads.deckCardAria.replace("{n}", String(index + 1))
+      );
+      button.innerHTML = cardBack();
+      button.addEventListener("click", (event) => {
+        if (state.locked) {
+          skipCurrent();
+          return;
+        }
+        pickCard(card, button, event.detail === 0);
+      });
+      deckFan.appendChild(button);
+    });
+  }
+
+  function skipCurrent() {
+    if (!state.locked) return;
+    if (state.skipDwell) {
+      state.skipDwell();
+      return;
+    }
+    state.skipRequested = true;
+  }
+
+  function setRect(element, rect) {
+    element.style.left = `${rect.left}px`;
+    element.style.top = `${rect.top}px`;
+    element.style.width = `${rect.width}px`;
+    element.style.height = `${rect.height}px`;
+  }
+
+  function runAnimation(element, frames, options) {
+    if (prefersReducedMotion() || typeof element.animate !== "function") {
+      return Promise.resolve(false);
+    }
+    const animation = element.animate(frames, options);
+    state.animations.push(animation);
+    return animation.finished
+      .then(
+        () => true,
+        () => false
+      )
+      .finally(() => {
+        state.animations = state.animations.filter((item) => item !== animation);
+      });
+  }
+
+  function animateGeometry(element, from, to, duration) {
+    setRect(element, from);
+    if (prefersReducedMotion() || typeof element.animate !== "function") {
+      setRect(element, to);
+      return Promise.resolve();
+    }
+    return runAnimation(
+      element,
+      [
+        { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` },
+        { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px` }
+      ],
+      {
+        duration,
+        easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        fill: "forwards"
+      }
+    );
+  }
+
+  function stageRect(size) {
+    const width = Math.max(72, Math.min(size.width || 140, window.innerWidth - 40));
+    return {
+      left: Math.max(20, (window.innerWidth - width) / 2),
+      top: Math.max(64, window.innerHeight * 0.08),
+      width,
+      height: width * 1.6
+    };
+  }
+
+  function createFlyingCard(card, rect) {
+    const flying = document.createElement("div");
+    flying.className = "flying-card";
+    setRect(flying, rect);
+    flying.tabIndex = 0;
+    flying.setAttribute("role", "button");
+    flying.setAttribute("aria-label", data.ui.spreads.deckContinueAria);
+    flying.innerHTML = `<div class="flying-card-inner">
+      <div class="flying-face flying-face--back">${cardBack()}</div>
+      <div class="flying-face flying-face--front">${cardFace(card, { mini: isGrand })}</div>
+    </div>`;
+    const skip = (event) => {
+      event.preventDefault();
+      skipCurrent();
+    };
+    flying.addEventListener("click", skip);
+    flying.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") skip(event);
+    });
+    document.body.appendChild(flying);
+    state.flying = flying;
+    return flying;
+  }
+
+  function flipCard(flying) {
+    const inner = flying.querySelector(".flying-card-inner");
+    if (!inner) return Promise.resolve();
+    return runAnimation(
+      inner,
+      [{ transform: "rotateY(0deg)" }, { transform: "rotateY(180deg)" }],
+      { duration: 550, easing: "ease-in-out", fill: "forwards" }
+    );
+  }
+
+  function waitForDwell(duration) {
+    if (prefersReducedMotion()) return Promise.resolve();
+    return new Promise((resolve) => {
+      const finishDwell = () => {
+        window.clearTimeout(timer);
+        if (state.skipDwell === finishDwell) state.skipDwell = null;
+        resolve();
+      };
+      const timer = window.setTimeout(finishDwell, duration);
+      state.skipDwell = finishDwell;
+    });
   }
 
   function revealSlot(index) {
@@ -205,29 +442,60 @@ function initReading(data) {
     slot.classList.add("is-revealed");
     state.revealedSet.add(index);
     state.revealed += 1;
-    if (state.revealed === spread.count) {
-      finish();
+  }
+
+  function ensureSlotVisible(slot) {
+    const previousBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = "auto";
+    try {
+      slot.scrollIntoView({ block: "center", inline: "center" });
+      const rect = slot.getBoundingClientRect();
+      const deckRect = deckStage.hidden ? null : deckStage.getBoundingClientRect();
+      const safeTop = deckRect ? deckRect.bottom + 16 : 16;
+      const safeBottom = window.innerHeight - 16;
+      if (rect.top < safeTop) {
+        window.scrollBy(0, rect.top - safeTop);
+      } else if (rect.bottom > safeBottom) {
+        window.scrollBy(0, rect.bottom - safeBottom);
+      }
+    } finally {
+      document.documentElement.style.scrollBehavior = previousBehavior;
     }
   }
 
+  function syncDeckStickyTop() {
+    const header = document.querySelector(".site-header");
+    const top = header ? header.offsetHeight + 8 : 84;
+    document.documentElement.style.setProperty("--deck-sticky-top", `${top}px`);
+  }
+
+  syncDeckStickyTop();
+  window.addEventListener("resize", syncDeckStickyTop, { passive: true });
+  if ("ResizeObserver" in window) {
+    const header = document.querySelector(".site-header");
+    if (header) new ResizeObserver(syncDeckStickyTop).observe(header);
+  }
+
   function finish() {
-    state.drawing = false;
+    state.deckStarted = false;
+    state.locked = false;
+    state.nextIndex = spread.count;
+    state.deck = [];
+    deckFan.innerHTML = "";
+    deckStage.hidden = true;
+    deckStage.classList.remove("is-locked");
+    hideCaption();
     root.classList.add("is-complete");
     revealButton.hidden = true;
+    revealButton.disabled = false;
     drawButton.hidden = true;
     resetButton.hidden = false;
     if (hint) hint.textContent = data.ui.spreads.readingComplete;
     renderSummary();
   }
 
-  function revealAll() {
-    clearTimers();
-    for (let index = 0; index < spread.count; index += 1) revealSlot(index);
-    finish();
-  }
-
   function renderSummary() {
-    if (!state.cards.length) return;
+    if (state.cards.some((card) => !card)) return;
     const result = buildSummary({
       cards: state.cards,
       spread,
@@ -257,36 +525,127 @@ function initReading(data) {
     summary.classList.add("is-visible");
   }
 
+  async function pickCard(card, sourceElement, fromKeyboard) {
+    if (state.locked || !state.deckStarted || state.nextIndex >= spread.count) return;
+    const runId = state.runId;
+    const index = state.nextIndex;
+    const slot = slots[index];
+    const targetCard = slot ? slot.querySelector(".slot-card") : null;
+    if (!slot || !targetCard) return;
+
+    const sourceRect = sourceElement.getBoundingClientRect();
+    const targetRect = targetCard.getBoundingClientRect();
+    const stage = stageRect(targetRect);
+    const label = positionLabel(index);
+
+    state.locked = true;
+    state.skipRequested = false;
+    deckStage.classList.add("is-locked");
+    revealButton.disabled = true;
+
+    state.deck = state.deck.filter((item) => item !== card);
+    renderDeck();
+    if (fromKeyboard) {
+      const nextButton = deckFan.querySelector(".deck-pick");
+      if (nextButton) nextButton.focus();
+    }
+
+    setStatus(data.ui.spreads.deckRevealing.replace("{position}", label.name || label.number));
+
+    const flying = createFlyingCard(card, sourceRect);
+
+    if (prefersReducedMotion()) {
+      state.cards[index] = card;
+      revealSlot(index);
+      ensureSlotVisible(slot);
+      flying.remove();
+      state.flying = null;
+      state.locked = false;
+      deckStage.classList.remove("is-locked");
+      revealButton.disabled = false;
+      state.nextIndex += 1;
+      updateStatus();
+      if (state.nextIndex >= spread.count) finish();
+      return;
+    }
+
+    await animateGeometry(flying, sourceRect, stage, 400);
+    if (runId !== state.runId) return;
+
+    await flipCard(flying);
+    if (runId !== state.runId) return;
+
+    state.cards[index] = card;
+    revealSlot(index);
+
+    if (!isLarge && !state.skipRequested) {
+      showCaption(index, stage);
+      await waitForDwell(1100);
+      if (runId !== state.runId) return;
+      hideCaption();
+    }
+    state.skipRequested = false;
+
+    ensureSlotVisible(slot);
+    if (runId !== state.runId) return;
+    const landingRect = targetCard.getBoundingClientRect();
+    await animateGeometry(
+      flying,
+      stage,
+      {
+        left: landingRect.left,
+        top: landingRect.top,
+        width: landingRect.width,
+        height: landingRect.height
+      },
+      500
+    );
+    if (runId !== state.runId) return;
+
+    flying.remove();
+    state.flying = null;
+    state.locked = false;
+    deckStage.classList.remove("is-locked");
+    revealButton.disabled = false;
+    state.nextIndex += 1;
+    updateStatus();
+    if (state.nextIndex >= spread.count) finish();
+  }
+
   function draw() {
-    if (state.drawing) return;
+    if (state.locked) return;
     reset();
-    state.drawing = true;
+    state.deckStarted = true;
+    state.deck = shuffle(data.cards);
+    state.cards = Array(spread.count).fill(null);
+    state.nextIndex = 0;
+    renderDeck();
+    deckStage.hidden = false;
+    deckStage.classList.remove("is-locked");
     drawButton.disabled = true;
     drawButton.hidden = true;
-    revealButton.hidden = true;
-    resetButton.hidden = true;
-    board.classList.add("is-shuffling");
+    revealButton.hidden = false;
+    revealButton.disabled = false;
+    resetButton.hidden = false;
     if (hint) hint.textContent = data.ui.spreads.drawLede;
+    updateStatus();
+  }
 
-    state.cards = shuffle(data.cards).slice(0, spread.count);
-
-    state.timers.push(
-      window.setTimeout(() => {
-        board.classList.remove("is-shuffling");
-        state.cards.forEach((card, index) => {
-          state.timers.push(
-            window.setTimeout(() => {
-              revealSlot(index);
-            }, 120 * index + 120)
-          );
-        });
-        revealButton.hidden = false;
-      }, 520)
-    );
+  function revealRemaining() {
+    if (!state.deckStarted || state.locked) return;
+    while (state.nextIndex < spread.count && state.deck.length) {
+      const card = state.deck.shift();
+      state.cards[state.nextIndex] = card;
+      revealSlot(state.nextIndex);
+      state.nextIndex += 1;
+    }
+    state.deck = [];
+    deckFan.innerHTML = "";
+    finish();
   }
 
   drawButton.addEventListener("click", draw);
-  revealButton.addEventListener("click", revealAll);
+  revealButton.addEventListener("click", revealRemaining);
   resetButton.addEventListener("click", reset);
 
   if (significatorRoot) {
@@ -298,13 +657,12 @@ function initReading(data) {
     });
   }
 
-  createBoard();
-  if (significatorRoot) significatorRoot.hidden = false;
+  reset();
 
   if (new URLSearchParams(window.location.search).get("demo") === "1") {
     document.documentElement.classList.add("is-demo");
-    state.cards = shuffle(data.cards).slice(0, spread.count);
-    revealAll();
+    draw();
+    revealRemaining();
   }
 }
 

@@ -15,8 +15,11 @@ JSON with no runtime dependencies.
 - Seven spreads: Daily Card (1), Three Cards (3), Five Cards (5), Love Seven
   (7), Nine Cards (3x3), Thirteen Cards (4/5/4) and Grand Tableau (9x4 with
   houses and a significator).
-- Interactive draw, shuffle and reveal with a deterministic combined reading
-  for the whole spread.
+- Interactive shuffle and manual card picking: chosen cards lift from a fanned
+  deck, flip to reveal their face, pause on the current position, then fly into
+  the layout. A deterministic combined reading is generated for the whole spread.
+- “Reveal remaining” completes any spread instantly for keyboard and assistive
+  use; Grand Tableau always draws all 36 cards, one per house.
 - Localized routes (`/en/...`, `/he/...`), RTL support for Hebrew, canonical
   URLs, hreflang alternates, sitemap, robots and JSON-LD.
 - Responsive dark theme, keyboard-friendly controls and reduced-motion support.
@@ -86,5 +89,8 @@ left-to-right locale beyond its direction and font class.
 - The footer links to the author's GitHub profile and source repository, and
   shows a static QR code for the live site stored at `assets/github-qr.svg`.
   Regenerate that file if the live-site URL changes.
+- The deck is intentionally driven by the user: shuffle, then pick one card per
+  position. Reduced-motion users skip the lift/flip/fly animation, and
+  “Reveal remaining” shows the rest of the spread immediately.
 - The `?demo=1` query parameter draws and reveals a spread automatically. It is
   used for visual screenshots and development previews.
