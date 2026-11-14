@@ -11,7 +11,9 @@ JSON with no runtime dependencies.
 
 - All 36 Lenormand cards with English and Hebrew meanings: keywords, core
   meaning, love, work, health, advice, timing, yes/no, polarity and playing-card
-  inset.
+  inset. The illustrations are authentic chromolithograph scenes from a
+  19th-century Dondorf Lenormand deck (public domain, via the British Museum and
+  Wikimedia Commons).
 - Seven spreads: Daily Card (1), Three Cards (3), Five Cards (5), Love Seven
   (7), Nine Cards (3x3), Thirteen Cards (4/5/4) and Grand Tableau (9x4 with
   houses and a significator).
@@ -61,15 +63,17 @@ server honours the current `dist/`.
 ## Project structure
 
 ```text
-assets/               Browser CSS and JavaScript, icons, favicon
+assets/               Browser CSS and JavaScript, icons, card art, favicon
 src/build.mjs         Static site generator
 src/serve.mjs         Local preview server
 src/data/cards.mjs    All 36 cards in English and Hebrew
+src/data/card-art.mjs Per-card accent colours
 src/data/spreads.mjs  Seven spreads, positions, houses and copy
 src/data/ui.mjs       UI strings and summary templates
 src/data/locales.mjs  Locale registry and site configuration
 src/templates/        Layout and shared components
 scripts/check.mjs     Post-build route and link checker
+scripts/fetch-card-art.mjs  Regenerate the Dondorf card crops
 test/                 Unit tests for the summary engine
 dist/                 Generated output (not source)
 ```
@@ -94,3 +98,7 @@ left-to-right locale beyond its direction and font class.
   “Reveal remaining” shows the rest of the spread immediately.
 - The `?demo=1` query parameter draws and reveals a spread automatically. It is
   used for visual screenshots and development previews.
+- Card images live in `assets/cards/` and are committed, so the site build needs
+  no network access. Run `node scripts/fetch-card-art.mjs` to re-crop them from
+  the public-domain British Museum sheets; attribution is in
+  `assets/cards/ATTRIBUTION.md`.

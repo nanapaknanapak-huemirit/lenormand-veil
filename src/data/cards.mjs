@@ -1,3 +1,5 @@
+import { cardArt } from "./card-art.mjs";
+
 export const cards = [
   {
     number: 1,
@@ -1154,6 +1156,10 @@ export const cards = [
       }
     }
   }
-];
+].map((card) => {
+  const art = cardArt[card.slug];
+  if (!art) throw new Error(`Missing card art for ${card.slug}`);
+  return { ...card, art: card.slug, accent: art.accent };
+});
 
 export const cardBySlug = Object.fromEntries(cards.map((card) => [card.slug, card]));

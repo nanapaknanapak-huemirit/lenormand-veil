@@ -16,6 +16,19 @@ const suitNames = {
 };
 
 let dataPromise = null;
+const preloadedArt = new Set();
+const artPreloads = [];
+
+function preloadCardArt(cards) {
+  cards.forEach((card) => {
+    if (!card.art || preloadedArt.has(card.art)) return;
+    preloadedArt.add(card.art);
+    const image = new Image();
+    image.decoding = "async";
+    image.src = `${BASE}/cards/${card.art}.webp`;
+    artPreloads.push(image);
+  });
+}
 
 function loadData() {
   if (!dataPromise) {
@@ -42,16 +55,18 @@ function isRed(suit) {
 
 function cardFace(card, { mini = false, href = "" } = {}) {
   const suit = card.playingCard.suit;
-  const face = `<article class="card-face ${mini ? "card-face--slot" : ""}">
+  const face = `<article class="card-face ${mini ? "card-face--slot" : ""}" style="--card-accent: ${esc(
+    card.accent
+  )}">
     <span class="card-corner card-corner--start">
       <span class="card-number">${card.number}</span>
       <span class="card-playing ${isRed(suit) ? "is-red" : ""}" aria-label="${esc(
         `${card.playingCard.rank} of ${suitNames[LOCALE][suit]}`
       )}">${esc(card.playingCard.rank)}${suitSymbols[suit]}</span>
     </span>
-    <span class="card-icon"><svg class="card-symbol" aria-hidden="true"><use href="${BASE}/icons.svg#icon-${esc(
-      card.icon
-    )}"></use></svg></span>
+    <span class="card-art" aria-hidden="true">
+      <img src="${BASE}/cards/${esc(card.art)}.webp" alt="" width="384" height="384" loading="eager" decoding="async">
+    </span>
     <span class="card-name">${esc(card.name)}</span>
     ${mini ? "" : `<span class="card-keywords">${esc(card.keywords.join(" · "))}</span>`}
   </article>`;
@@ -92,6 +107,7 @@ function initDaily(data) {
 
   const dayKey = `${new Date().toISOString().slice(0, 10)}|${LOCALE}`;
   const card = data.cards[hashString(dayKey) % data.cards.length];
+  preloadCardArt([card]);
   let revealed = false;
 
   const reveal = () => {
@@ -117,6 +133,8 @@ function initReading(data) {
   if (!root) return;
   const spread = data.spreads.find((item) => item.slug === root.dataset.spread);
   if (!spread) return;
+
+  preloadCardArt(data.cards);
 
   const board = root.querySelector("[data-board]");
   const drawButton = root.querySelector("[data-draw]");

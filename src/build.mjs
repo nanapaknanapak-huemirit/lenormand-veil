@@ -118,7 +118,7 @@ function cardDetailBody(card, locale, uiLocale) {
     ])}
     <section class="card-hero">
       <div class="card-hero-visual">
-        ${cardFace(card, { base: BASE, locale: locale.code, extraClass: "card-face--hero" })}
+        ${cardFace(card, { base: BASE, locale: locale.code, extraClass: "card-face--hero", eager: true })}
       </div>
       <div class="card-hero-copy">
         <p class="eyebrow">${esc(uiLocale.cards.cardNumber.replace("{n}", card.number))}</p>
@@ -234,7 +234,8 @@ function homeBody(locale, uiLocale) {
             cardFace(card, {
               base: BASE,
               locale: locale.code,
-              extraClass: `hero-card hero-card--${index + 1}`
+              extraClass: `hero-card hero-card--${index + 1}`,
+              eager: true
             })
           )
           .join("")}
@@ -627,6 +628,8 @@ function dataForLocale(locale) {
       number: card.number,
       slug: card.slug,
       icon: card.icon,
+      art: card.art,
+      accent: card.accent,
       playingCard: card.playingCard,
       polarity: card.polarity,
       yesNo: card.yesNo,

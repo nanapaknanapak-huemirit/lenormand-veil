@@ -29,16 +29,18 @@ export function playingCard(card, locale, className = "") {
   return `<span class="playing-card ${red ? "is-red" : ""} ${className}" aria-label="${esc(`${card.playingCard.rank} of ${suitNames[locale][suit]}`)}"><span>${esc(card.playingCard.rank)}</span><span>${suitSymbols[suit]}</span></span>`;
 }
 
-export function cardFace(card, { base, locale, href = "", compact = false, extraClass = "" }) {
+export function cardFace(card, { base, locale, href = "", compact = false, extraClass = "", eager = false }) {
   const content = card.content[locale];
   const keywords = compact ? "" : `<span class="card-keywords">${esc(content.keywords.join(" · "))}</span>`;
   const face = `
-    <article class="card-face ${compact ? "card-face--compact" : ""} ${extraClass}">
+    <article class="card-face ${compact ? "card-face--compact" : ""} ${extraClass}" style="--card-accent: ${esc(card.accent)}">
       <span class="card-corner card-corner--start">
         <span class="card-number">${card.number}</span>
         ${playingCard(card, locale, "card-playing")}
       </span>
-      <span class="card-icon">${icon(card.icon, base, "card-symbol")}</span>
+      <span class="card-art" aria-hidden="true">
+        <img src="${base}/assets/cards/${esc(card.art)}.webp" alt="" width="384" height="384" loading="${eager ? "eager" : "lazy"}" decoding="async"${eager ? ' fetchpriority="high"' : ""}>
+      </span>
       <span class="card-name">${esc(content.name)}</span>
       ${keywords}
     </article>`;

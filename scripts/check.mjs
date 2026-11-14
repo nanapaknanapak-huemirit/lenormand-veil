@@ -123,11 +123,24 @@ async function main() {
     "icons.svg",
     "favicon.svg",
     "github-qr.svg",
+    "cards/ATTRIBUTION.md",
     ...locales.map((locale) => `data-${locale.code}.json`)
   ];
   for (const asset of assetFiles) {
     assert(fileSet.has(path.normalize(path.join(dist, "assets", asset))), `asset exists: assets/${asset}`);
   }
+
+  const missingArt = cards.filter(
+    (card) => !fileSet.has(path.normalize(path.join(dist, "assets", "cards", `${card.art}.webp`)))
+  );
+  assert(
+    missingArt.length === 0,
+    `all ${cards.length} card art files exist (${cards.length - missingArt.length}/${cards.length})`
+  );
+  assert(
+    new Set(cards.map((card) => card.art)).size === cards.length,
+    "every card has a unique artwork file"
+  );
 
   function resolveInternal(url, fromFile) {
     const clean = url.split("#")[0].split("?")[0];
