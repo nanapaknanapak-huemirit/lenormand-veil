@@ -81,7 +81,7 @@ ${alternateLinks}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
-<meta name="theme-color" content="#0b0914">
+<meta name="theme-color" content="#07050f">
 <link rel="icon" href="${base}/assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
